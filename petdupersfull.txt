@@ -1,0 +1,74 @@
+local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Rayfield/main/source"))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Dig to Core | Custom Pet Crafter",
+    LoadingTitle = "Custom Pet Crafter",
+    ConfigurationSaving = {
+       Enabled = true,
+       FolderName = nil,
+       FileName = "PetCrafterSettings"
+    }
+})
+
+local autoPet = false
+local selectedPet = "Glimmerfly"
+local petAmount = 100 -- default craft amount
+
+local MainTab = Window:CreateTab("Auto", 4483362458)
+local Section = MainTab:CreateSection("Custom Pet Crafting")
+
+Section:CreateInput({
+    Name = "Pet Name (Type Exactly)",
+    PlaceholderText = "e.g. DOLL, Glimmerfly",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(Text)
+        selectedPet = Text
+        Rayfield:Notify({
+            Title = "Pet Selected",
+            Content = "Now crafting: " .. selectedPet,
+            Duration = 3,
+        })
+    end,
+})
+
+Section:CreateInput({
+    Name = "Amount to Craft (100 recommended)",
+    PlaceholderText = "e.g. 100",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(Text)
+        local num = tonumber(Text)
+        if num and num > 0 then
+            petAmount = num
+            Rayfield:Notify({
+                Title = "Amount Set",
+                Content = "Now using amount: " .. petAmount,
+                Duration = 3,
+            })
+        else
+            Rayfield:Notify({
+                Title = "Invalid Number",
+                Content = "Please enter a valid positive number.",
+                Duration = 3,
+            })
+        end
+    end,
+})
+
+Section:CreateToggle({
+    Name = "Auto Craft Pet (Base → Gold → Diamond)",
+    CurrentValue = false,
+    Callback = function(Value)
+        autoPet = Value
+    end,
+})
+
+-- Crafting loop
+game:GetService("RunService").RenderStepped:Connect(function()
+    if autoPet and selectedPet ~= "" and petAmount > 0 then
+        local rs = game:GetService("ReplicatedStorage")
+        rs.Remotes.PetCageEvent:FireServer(selectedPet)
+        rs.PetRemotes.GoldPetCraftEvent:FireServer(selectedPet, petAmount)
+        rs.PetRemotes.DiamondPetCraftEvent:FireServer("Gold " .. selectedPet, petAmount)
+        task.wait(0.1)
+    end
+end)
